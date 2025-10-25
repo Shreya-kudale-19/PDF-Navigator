@@ -1,0 +1,367 @@
+ReactJS PDF Highlighting Application - Cloudmotiv Case Study
+COMPLETE IMPLEMENTATION GUIDE
+Project Overview
+Build a React web application that displays a split-screen interface: PDF document on the left, analysis text on the right. When users click citation numbers (e.g., , , ) in the analysis text, the corresponding text in the PDF automatically highlights in yellow and navigates to that page.​​
+
+Exact Requirements from Case Study
+Layout & UI
+Two-column responsive layout (50/50 split)
+
+Left Panel: PDF viewer displaying "Maersk-Q2-2025-Interim-Report.pdf" (25-page PDF)
+
+Right Panel: Scrollable analysis text with financial content
+
+Responsive design (stack columns on mobile)
+
+Clean, professional interface
+
+Core Citation Mapping
+The PDF has 25 pages. Here are the exact citations to implement:
+
+javascript
+const citationMap = {
+  1: {
+    page: 3,
+    searchText: "EBITDA of USD 2.3 bn (USD 2.1 bn)",
+    fullContext: "Maersk's results continued to improve year-on-year with consolidated revenue of USD 13.1bn USD 12.8bn and EBITDA of USD 2.3bn USD 2.1bn",
+    section: "Highlights Q2 2025"
+  },
+  2: {
+    page: 5,
+    searchText: "EBITDA increased to USD 2.3bn (USD 2.1bn)",
+    fullContext: "EBITDA increased to USD 2.3bn USD 2.1bn, with the EBITDA margin improving to 17.5 16.8, driven by higher revenue and cost management",
+    section: "Review Q2 2025"
+  },
+  3: {
+    page: 15,
+    searchText: "Gain on sale of non-current assets, etc., net 25 (208)",
+    alternativeText: "Gain on sale of non-current assets",
+    fullContext: "This appears in the Condensed Income Statement table showing Q2 2025 vs Q2 2024 comparison",
+    section: "Condensed income statement"
+  }
+};
+IMPORTANT: Page 15 contains a financial table (Condensed Income Statement), so citation highlights a row within that table.​​
+
+Analysis Text Content (Right Panel)
+text
+Analysis
+
+No extraordinary or one-off items affecting EBITDA were reported in Maersk's Q2 2025 results. The report explicitly notes that EBITDA improvements stemmed from operational performance—including volume growth, cost control, and margin improvement across Ocean, Logistics & Services, and Terminals segments [1][2]. Gains or losses from asset sales, which could qualify as extraordinary items, are shown separately under EBIT and not included in EBITDA. The gain on sale of non-current assets was USD 25 m in Q2 2025, significantly lower than USD 208 m in Q2 2024, but these affect EBIT, not EBITDA [3]. Hence, Q2 2025 EBITDA reflects core operating activities without one-off extraordinary adjustments.
+
+Findings
+
+Page 3 — Highlights Q2 2025
+EBITDA increase (USD 2.3 bn vs USD 2.1 bn prior year) attributed to operational improvements; no mention of extraordinary or one-off items. [1]
+
+Page 5 — Review Q2 2025
+EBITDA rise driven by higher revenue and cost control across all segments; no extraordinary gains or losses included. [2]
+
+Page 15 — Condensed Income Statement
+Gain on sale of non-current assets USD 25 m (vs USD 208 m prior year) reported separately below EBITDA; therefore, not part of EBITDA. [3]
+
+Supporting Evidence
+
+[1] A.P. Moller – Maersk Q2 2025 Interim Report (7 Aug 2025) — Page 3 →
+"Maersk's results continued to improve year-on-year … EBITDA of USD 2.3 bn (USD 2.1 bn) … driven by volume and other revenue growth in Ocean, margin improvements in Logistics & Services and significant top line growth in Terminals."
+
+[2] A.P. Moller – Maersk Q2 2025 Interim Report (7 Aug 2025) — Page 5 →
+"EBITDA increased to USD 2.3 bn (USD 2.1 bn) … driven by higher revenue and cost management … Ocean's EBITDA … slightly increased by USD 36 m … Logistics & Services contributed significantly with a USD 71 m increase … Terminals' EBITDA increased by USD 50 m."
+
+[3] A.P. Moller – Maersk Q2 2025 Interim Report (7 Aug 2025) — Page 15 →
+"Gain on sale of non-current assets, etc., net 25 (208) … Profit before depreciation, amortisation and impairment losses, etc. (EBITDA) 2,298"
+Technical Implementation
+Tech Stack
+Option A: Using react-pdf (Recommended for this task)
+
+bash
+npm create vite@latest cloudmotiv-case-study -- --template react
+cd cloudmotiv-case-study
+npm install react-pdf pdfjs-dist
+npm install
+Option B: Using @react-pdf-viewer (More features)
+
+bash
+npm create vite@latest cloudmotiv-case-study -- --template react
+cd cloudmotiv-case-study
+npm install @react-pdf-viewer/core @react-pdf-viewer/default-layout @react-pdf-viewer/highlight
+npm install
+Step-by-Step Implementation
+Phase 1: Project Setup
+Create project structure:
+
+text
+src/
+├── components/
+│   ├── PDFViewer.jsx          // Left panel - PDF display
+│   ├── AnalysisPanel.jsx      // Right panel - Text with citations
+│   └── CitationLink.jsx       // Clickable citation component
+├── data/
+│   └── citationMap.js         // Citation mapping data
+├── utils/
+│   └── pdfHighlight.js        // Highlight logic
+├── App.jsx                     // Main layout
+└── App.css                     // Styling
+public/
+└── Maersk-Q2-2025-Interim-Report.pdf  // Place PDF here
+Configure PDF.js worker in main.jsx or App.jsx:
+
+javascript
+import { pdfjs } from 'react-pdf';
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+Phase 2: Build Layout (App.jsx)
+javascript
+import { useState } from 'react';
+import PDFViewer from './components/PDFViewer';
+import AnalysisPanel from './components/AnalysisPanel';
+import './App.css';
+
+function App() {
+  const [activeHighlight, setActiveHighlight] = useState(null);
+  
+  const handleCitationClick = (citationNumber) => {
+    setActiveHighlight(citationNumber);
+  };
+
+  return (
+    <div className="app-container">
+      <div className="pdf-section">
+        <PDFViewer activeHighlight={activeHighlight} />
+      </div>
+      <div className="analysis-section">
+        <AnalysisPanel onCitationClick={handleCitationClick} />
+      </div>
+    </div>
+  );
+}
+
+export default App;
+App.css:
+
+css
+.app-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 100vh;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.pdf-section, .analysis-section {
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+}
+Phase 3: Citation Data (citationMap.js)
+javascript
+export const citationMap = {
+  1: {
+    page: 3,
+    searchText: "EBITDA of USD 2.3 bn (USD 2.1 bn)",
+    context: "Highlights Q2 2025 - EBITDA performance"
+  },
+  2: {
+    page: 5,
+    searchText: "EBITDA increased to USD 2.3bn (USD 2.1bn)",
+    context: "Review Q2 2025 - Operational improvements"
+  },
+  3: {
+    page: 15,
+    searchText: "Gain on sale of non-current assets, etc., net 25 (208)",
+    context: "Condensed Income Statement - Line item in financial table"
+  }
+};
+Phase 4: PDF Viewer Component
+javascript
+import { useState, useEffect, useRef } from 'react';
+import { Document, Page, pdfjs } from 'react-pdf';
+import { citationMap } from '../data/citationMap';
+import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+import 'react-pdf/dist/esm/Page/TextLayer.css';
+
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+
+function PDFViewer({ activeHighlight }) {
+  const [numPages, setNumPages] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageRefs = useRef({});
+
+  useEffect(() => {
+    if (activeHighlight && citationMap[activeHighlight]) {
+      const targetPage = citationMap[activeHighlight].page;
+      setCurrentPage(targetPage);
+      
+      // Scroll to the page
+      setTimeout(() => {
+        pageRefs.current[targetPage]?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+      }, 100);
+    }
+  }, [activeHighlight]);
+
+  function onDocumentLoadSuccess({ numPages }) {
+    setNumPages(numPages);
+  }
+
+  return (
+    <div className="pdf-viewer">
+      <Document
+        file="/Maersk-Q2-2025-Interim-Report.pdf"
+        onLoadSuccess={onDocumentLoadSuccess}
+      >
+        {Array.from(new Array(numPages), (el, index) => (
+          <div 
+            key={`page_${index + 1}`}
+            ref={el => pageRefs.current[index + 1] = el}
+            className={activeHighlight && citationMap[activeHighlight]?.page === index + 1 ? 'highlighted-page' : ''}
+          >
+            <Page 
+              pageNumber={index + 1} 
+              width={600}
+              renderTextLayer={true}
+              renderAnnotationLayer={true}
+            />
+          </div>
+        ))}
+      </Document>
+    </div>
+  );
+}
+
+export default PDFViewer;
+Note: For actual text highlighting (yellow background on specific words), you'll need to implement custom text layer highlighting using getTextContent() from PDF.js or use a library like react-pdf-highlighter.​
+
+Phase 5: Analysis Panel Component
+javascript
+import CitationLink from './CitationLink';
+
+function AnalysisPanel({ onCitationClick }) {
+  return (
+    <div className="analysis-content">
+      <h2>Analysis</h2>
+      <p>
+        No extraordinary or one-off items affecting EBITDA were reported in Maersk's Q2 2025 results. 
+        The report explicitly notes that EBITDA improvements stemmed from operational performance—including 
+        volume growth, cost control, and margin improvement across Ocean, Logistics & Services, and 
+        Terminals segments <CitationLink number={1} onClick={onCitationClick} />
+        <CitationLink number={2} onClick={onCitationClick} />. Gains or losses from asset sales, which 
+        could qualify as extraordinary items, are shown separately under EBIT and not included in EBITDA. 
+        The gain on sale of non-current assets was USD 25 m in Q2 2025, significantly lower than USD 208 m 
+        in Q2 2024, but these affect EBIT, not EBITDA <CitationLink number={3} onClick={onCitationClick} />. 
+        Hence, Q2 2025 EBITDA reflects core operating activities without one-off extraordinary adjustments.
+      </p>
+      
+      {/* Add remaining sections similarly */}
+    </div>
+  );
+}
+
+export default AnalysisPanel;
+Phase 6: Citation Link Component
+javascript
+import './CitationLink.css';
+
+function CitationLink({ number, onClick }) {
+  return (
+    <span 
+      className="citation-link"
+      onClick={() => onClick(number)}
+      title={`Jump to page reference [${number}]`}
+    >
+      [{number}]
+    </span>
+  );
+}
+
+export default CitationLink;
+CitationLink.css:
+
+css
+.citation-link {
+  color: #0066cc;
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 0 2px;
+  transition: all 0.2s;
+}
+
+.citation-link:hover {
+  text-decoration: underline;
+  color: #0052a3;
+  background-color: #f0f8ff;
+}
+Advanced: Actual Text Highlighting (Yellow Background)
+For precise text highlighting within the PDF, use this approach with react-pdf-highlighter:
+
+bash
+npm install react-pdf-highlighter
+Or implement custom highlighting using PDF.js getTextContent():
+
+javascript
+// In PDFViewer component
+const highlightText = async (pageNum, searchText) => {
+  const page = await pdfDocument.getPage(pageNum);
+  const textContent = await page.getTextContent();
+  
+  // Find text coordinates
+  const matchingItems = textContent.items.filter(item => 
+    item.str.includes(searchText)
+  );
+  
+  // Apply yellow highlight overlay at coordinates
+  // Use canvas or div overlay with absolute positioning
+};
+Testing Checklist
+✅ PDF loads all 25 pages correctly
+✅ Clicking navigates to page 3 and highlights "EBITDA of USD 2.3 bn"​
+✅ Clicking navigates to page 5 and highlights "EBITDA increased to USD 2.3bn"​
+✅ Clicking navigates to page 15 and highlights table row "Gain on sale of non-current assets"​
+✅ Previous highlights clear when new citation clicked
+✅ Layout responsive on mobile/tablet
+✅ Smooth scrolling and navigation
+
+Deployment
+Place Maersk-Q2-2025-Interim-Report.pdf in /public folder
+
+Build: npm run build
+
+Test locally: npm run dev
+
+Deploy to Vercel/Netlify or share via GitHub
+
+Key Implementation Notes
+Page 15 is a financial table, so highlighting requires targeting table cells​​
+
+Yellow highlight color: Use background-color: #FFFF00 or rgba(255, 255, 0, 0.3) for semi-transparent overlay​
+
+PDF.js Worker: Must be configured correctly or PDF won't render​
+
+Text search: Case-sensitive by default - normalize text if needed​
+
+Success Criteria
+This assessment evaluates:
+
+✅ React component architecture and state management
+
+✅ Third-party library integration (PDF.js/react-pdf)
+
+✅ Event-driven programming (click handlers, navigation)
+
+✅ UI/UX implementation (layout, responsiveness, interactions)
+
+✅ Problem-solving (text search, coordinate mapping, highlighting)
+
+Timeline: 3-5 hours of focused development
+Submission: Working application demonstrating all three citation highlights
+
+Start with basic layout → PDF rendering → citation clicks → page navigation → finally add yellow text highlighting.

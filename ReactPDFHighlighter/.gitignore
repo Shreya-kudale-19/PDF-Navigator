@@ -1,0 +1,14 @@
+# deps / builds
+node_modules/
+dist/
+.build/
+coverage/
+
+# env / local editor / logs
+.env
+*.log
+.vscode/
+.idea/
+.DS_Store
+
+# lockfiles handled explicitly
